@@ -5,25 +5,34 @@ An automated system to find, tailor resumes for, and track job applications, spe
 ## 🎯 Project Overview
 This system automates the tedious parts of the job search (discovery, keyword tailoring, and answer drafting) while keeping a **"Human-in-the-loop"** for final review and submission to avoid risk (e.g., LinkedIn bans). It leverages **Agentic Skills** and **MCP (Model Context Protocol)** to bridge the gap between AI reasoning and personal knowledge stored in Notion.
 
+### 👤 The Candidate (About Me)
+- **Role**: Senior Product Manager (IC - Individual Contributor focus).
+- **Profile**: A builder who happens to be a PM. Direct, metric-backed, and focused on shipping value rather than corporate posturing.
+- **Key Milestones**: Validated AI voice agents for 5k+ users at WFP, managed post-merger B2B integrations at FORVIA, and scaled e-commerce platforms at Accenture and C&A.
+- **Voice**: Authentic, structured, and fluff-free. Every claim is backed by a metric or a concrete story.
+
 ### 🏠 System Architecture
 - **Knowledge Base (Notion)**: Single source of truth for master resume, case studies, and metric-backed Q&A templates.
 - **Tracker Board (Notion/Linear)**: Kanban pipeline for application funnel management (To Apply → Ready → Applied → Interview → Offer/Reject).
-- **Agentic Skills**: Specialized modules for resume tailoring and Q&A generation using the applicant's authentic voice.
+- **Agentic Skills**: Specialized modules for resume tailoring, ATS verification, and Q&A generation.
 
 ## 🛠 Features
 
-- **Automated Job Search**: Scans startup lists and uses DuckDuckGo to identify relevant Product Manager job postings.
-- **Custom MCP Integration**: Connects directly to **Notion API** via MCP (Model Context Protocol) to read project background and track progress.
-- **Resume Tailoring**: Generates tailored resumes by compiling LaTeX templates (using `pdflatex`) after extracting job-specific ATS keywords.
+- **Direct-to-Source Discovery**: Targets specific startup pools and uses specialized search queries (excluding aggregators like LinkedIn/Glassdoor) to find direct ATS links (Greenhouse, Lever, Personio) on company career pages.
+- **Custom MCP Integration**: Connects directly to **Notion API** via MCP (Model Context Protocol) to read project background and track progress in real-time.
+- **Resume Tailoring & Verification**: 
+  - Generates tailored resumes by compiling LaTeX templates (using `pdflatex`).
+  - **ATS-Fixer**: A specialized verification layer that checks keyword coverage, visibility, and consistency (title/seniority/location) before the final render.
 - **Form Automation**: Automatically fills out job application forms (ATS) using Playwright while preserving a manual review step.
 - **Notion Tracking**: Automatically syncs every application to a Notion database via the Notion API.
 - **Agentic Skills**: 
   - `resume-tailor`: Reads job postings and suggests honest keyword updates.
+  - `ats-fixer`: Performs semantic matching and visibility audits to minimize avoidable rejections.
   - `qa-generator`: Drafts metric-backed application answers in a direct, builder-oriented tone.
 
 ## 📁 Project Structure
 
-- `batch_job_search.py`: Core script for bulk job discovery using DDG.
+- `batch_job_search.py`: Core script for bulk job discovery using targeted DDG queries.
 - `scripts/`:
   - `form_filler.py`: Generic ATS form filler using Playwright (PAUSES for review).
   - `notion_tracker.py`: Syncs application progress to Notion using the official API.
@@ -31,6 +40,7 @@ This system automates the tedious parts of the job search (discovery, keyword ta
   - `notion_db_setup.py`: Initializes the required Notion database schema.
 - `.agent/skills/`: Custom agentic workflows:
   - `resume-tailor/SKILL.md`: Instructions for ATS optimization.
+  - `ats-fixer/SKILL.md`: Verification layer for keyword and format compliance.
   - `qa-generator/SKILL.md`: Instructions for drafting authentic answers.
 - `templates/`: Contains LaTeX resume templates.
 
@@ -52,7 +62,7 @@ This system automates the tedious parts of the job search (discovery, keyword ta
    ```
 
 4. **Prepare & Track**:
-   Use the `qa-generator` and `resume-tailor` skills in your agentic IDE to prepare materials, then track them:
+   Use the `qa-generator`, `resume-tailor`, and `ats-fixer` skills in your agentic IDE to prepare materials, then track them:
    ```bash
    python scripts/notion_tracker.py create --title "Senior PM" --company "StartupX" --url "..."
    ```
