@@ -2,24 +2,37 @@
 
 An automated system to find, tailor resumes for, and track job applications, specifically designed for Product Manager roles in the European startup ecosystem.
 
+## 🎯 Project Overview
+This system automates the tedious parts of the job search (discovery, keyword tailoring, and answer drafting) while keeping a **"Human-in-the-loop"** for final review and submission to avoid risk (e.g., LinkedIn bans). It leverages **Agentic Skills** and **MCP (Model Context Protocol)** to bridge the gap between AI reasoning and personal knowledge stored in Notion.
+
+### 🏠 System Architecture
+- **Knowledge Base (Notion)**: Single source of truth for master resume, case studies (WFP, FORVIA, Accenture, C&A), and metric-backed Q&A templates.
+- **Tracker Board (Notion/Linear)**: Kanban pipeline for application funnel management (To Apply → Ready → Applied → Interview → Offer/Reject).
+- **Agentic Skills**: Specialized modules for resume tailoring and Q&A generation using the applicant's authentic voice.
+
 ## 🛠 Features
 
 - **Automated Job Search**: Scans startup lists and uses DuckDuckGo to identify relevant Product Manager job postings.
-- **Resume Tailoring**: Generates tailored resumes by compiling LaTeX templates (using `pdflatex`).
+- **Custom MCP Integration**: Connects directly to **Notion API** via MCP (Model Context Protocol) to read project background and track progress.
+- **Resume Tailoring**: Generates tailored resumes by compiling LaTeX templates (using `pdflatex`) after extracting job-specific ATS keywords.
 - **Form Automation**: Automatically fills out job application forms (ATS) using Playwright while preserving a manual review step.
-- **Notion Integration**: Automatically tracks applications in a Notion database, including status updates and document links.
-- **Skill-Based Automation**: Includes specialized "agentic skills" for AI-assisted QA generation and resume customization.
+- **Notion Tracking**: Automatically syncs every application to a Notion database via the Notion API.
+- **Agentic Skills**: 
+  - `resume-tailor`: Reads job postings and suggests honest keyword updates.
+  - `qa-generator`: Drafts metric-backed application answers in a direct, builder-oriented tone.
 
 ## 📁 Project Structure
 
-- `batch_job_search.py`: Core script for bulk job discovery.
+- `batch_job_search.py`: Core script for bulk job discovery using DDG.
 - `scripts/`:
-  - `form_filler.py`: Generic ATS form filler using Playwright.
-  - `notion_tracker.py`: Syncs application progress to Notion.
+  - `form_filler.py`: Generic ATS form filler using Playwright (PAUSES for review).
+  - `notion_tracker.py`: Syncs application progress to Notion using the official API.
   - `render_pdf.py`: Compiles LaTeX resumes into PDFs.
-  - `notion_db_setup.py`: Initializes the Notion workspace schema.
+  - `notion_db_setup.py`: Initializes the required Notion database schema.
+- `.agent/skills/`: Custom agentic workflows:
+  - `resume-tailor/SKILL.md`: Instructions for ATS optimization.
+  - `qa-generator/SKILL.md`: Instructions for drafting authentic answers.
 - `templates/`: Contains LaTeX resume templates.
-- `.agent/skills/`: Custom AI workflows for tailoring content.
 
 ## 🚀 Getting Started
 
@@ -30,18 +43,29 @@ An automated system to find, tailor resumes for, and track job applications, spe
    ```
 
 2. **Configuration**:
-   Update `.env` with your Notion API tokens and personal details.
+   - Update `.env` with your `NOTION_TOKEN` and `APPLICATIONS_DB_ID`.
+   - Ensure `pdflatex` is installed for resume generation.
 
 3. **Search for Jobs**:
    ```bash
    python batch_job_search.py
    ```
 
-4. **Fill Applications**:
+4. **Prepare & Track**:
+   Use the `qa-generator` and `resume-tailor` skills in your agentic IDE to prepare materials, then track them:
+   ```bash
+   python scripts/notion_tracker.py create --title "Senior PM" --company "StartupX" --url "..."
+   ```
+
+5. **Fill Applications**:
    ```bash
    python scripts/form_filler.py --url <JOB_URL> --resume-pdf <PATH_TO_PDF>
    ```
 
-## ⚠️ Notes
-- The form filler intentionally pauses before submission to allow for manual review and CAPTCHA handling.
-- Requires `pdflatex` (e.g., from TeX Live or MiKTeX) for resume generation.
+## 🗺 Roadmap
+- **Phase 1 (Current)**: Notion/Linear integration, Agentic Skills, and automated form filling.
+- **Phase 2**: Email monitoring for rejections (auto-GDPR deletion requests), interview prep briefings, and WhatsApp integration for daily match alerts.
+
+## ⚠️ Safety First
+- **Zero Ban Risk**: The system NEVER auto-submits applications. It fills the form and waits for you to review and click "Submit".
+- **Authenticity**: Metrics and experience are pulled from pre-validated "Master" documents to ensure honesty.
