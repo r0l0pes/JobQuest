@@ -7,3 +7,15 @@ output/*.aux
 output/*.log
 output/*.out
 .DS_Store
+
+# User requested exclusions
+Articles.md
+JOB_SEARCH_SYSTEM_HANDOFF.md
+prd_ats_fixer.md
+prompt_pack_ats_fixer.md
+Resume_Rodrigo-Lopes.pdf
+Resume_Rodrigo-Lopes.tex
+output/Resume_Rodrigo-Lopes.pdf
+output/Resume_Rodrigo-Lopes.tex
+output/ats_report_*.json
+output/ats_report_*.md

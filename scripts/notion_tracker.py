@@ -14,13 +14,13 @@ from notion_client import Client
 notion = Client(auth=NOTION_TOKEN)
 
 
-def create_entry(title, company, url, status="Applied"):
+def create_entry(title, company, url, status="Applied", qa=None):
     """Create a new application entry in the Applications database."""
     print(f"Creating entry: {title} at {company}...", file=sys.stderr)
 
     # Actual DB schema (discovered via API):
     # Company: title, Status: select, Job Title: select,
-    # URL: url, Date applied: date, Tailored Resume: files
+    # URL: url, Date applied: date, Tailored Resume: files, Q/A: rich_text
     properties = {
         "Company": {
             "title": [{"text": {"content": company}}]
@@ -38,6 +38,13 @@ def create_entry(title, company, url, status="Applied"):
             "date": {"start": date.today().isoformat()}
         },
     }
+
+    if qa:
+        # Notion rich_text has a 2000 char limit per block; split if needed
+        qa_blocks = []
+        for i in range(0, len(qa), 2000):
+            qa_blocks.append({"text": {"content": qa[i:i+2000]}})
+        properties["Q/A"] = {"rich_text": qa_blocks}
 
     response = notion.pages.create(
         parent={"database_id": APPLICATIONS_DB_ID},
@@ -64,6 +71,13 @@ def update_entry(page_id, **kwargs):
     if "status" in kwargs and kwargs["status"]:
         properties["Status"] = {"select": {"name": kwargs["status"]}}
 
+    if "qa" in kwargs and kwargs["qa"]:
+        qa = kwargs["qa"]
+        qa_blocks = []
+        for i in range(0, len(qa), 2000):
+            qa_blocks.append({"text": {"content": qa[i:i+2000]}})
+        properties["Q/A"] = {"rich_text": qa_blocks}
+
     if not properties:
         return {"success": False, "error": "No properties to update"}
 
@@ -87,11 +101,13 @@ def main():
     create_parser.add_argument("--company", required=True, help="Company name")
     create_parser.add_argument("--url", required=True, help="Job posting URL")
     create_parser.add_argument("--status", default="Applied", help="Application status")
+    create_parser.add_argument("--qa", help="Q&A content (questions and answers)")
 
     # Update command
     update_parser = subparsers.add_parser("update", help="Update existing entry")
     update_parser.add_argument("--page-id", required=True, help="Notion page ID")
     update_parser.add_argument("--status", help="New status")
+    update_parser.add_argument("--qa", help="Q&A content (questions and answers)")
 
     args = parser.parse_args()
 
@@ -101,11 +117,13 @@ def main():
             company=args.company,
             url=args.url,
             status=args.status,
+            qa=args.qa,
         )
     elif args.command == "update":
         result = update_entry(
             page_id=args.page_id,
             status=args.status,
+            qa=args.qa,
         )
 
     print(json.dumps(result, indent=2))

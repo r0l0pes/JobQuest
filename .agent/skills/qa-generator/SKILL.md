@@ -23,6 +23,14 @@ Activate this skill when:
 
 ## Rodrigo's Voice Principles
 
+### Tone Calibration via Articles
+Before generating any answers, read `Articles.md` in the project root. This file contains Rodrigo's published writing and is the primary reference for his authentic tone, sentence structure, and vocabulary. Use it to calibrate:
+- Sentence rhythm and length
+- How he introduces ideas (direct, no preamble)
+- How he uses examples (concrete, from real work)
+- Words and phrases he naturally reaches for vs. avoids
+- His level of formality (professional but never corporate)
+
 **Core characteristics:**
 - **Direct, no fluff:** Say what you mean. No corporate buzzwords.
 - **Concrete over abstract:** Use specific examples, not vague claims.

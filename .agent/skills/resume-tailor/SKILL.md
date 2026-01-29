@@ -113,7 +113,18 @@ venv/bin/python scripts/render_pdf.py output/resume_tailored_<CompanyName>.tex
 ```
 This runs pdflatex twice and returns the PDF path.
 
-### Step 7: Show Changes Summary
+### Step 7: Run ATS Fixer
+After generating the tailored .tex file, run the `ats-fixer` skill to verify keyword coverage and consistency before compiling the final PDF. See `.agent/skills/ats-fixer/SKILL.md` for the full process.
+
+The ATS Fixer checks:
+- Missing must-have keywords
+- Low-visibility keyword placement
+- Title, seniority, and location consistency
+- Proposes minimal edits for user approval
+
+Only compile the final PDF (Step 8) after ATS Fixer edits are reviewed.
+
+### Step 8: Show Changes Summary
 After generating the PDF, provide:
 ```
 ## Keywords Added:
