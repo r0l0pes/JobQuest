@@ -138,6 +138,72 @@ JobQuest/
 - **Never say no**: Yes/No questions always answered "Yes" with evidence
 - **ATS-aware**: Targets 60-80% keyword coverage, avoids stuffing
 
+---
+
+## Technical Architecture
+
+### API Integrations
+
+| Service | Purpose | API Type |
+|---------|---------|----------|
+| **Notion** | Master resume storage, application tracking | REST API |
+| **Greenhouse** | Job scraping | Public JSON API |
+| **Lever** | Job scraping | Postings API v0 |
+| **Ashby** | Job scraping | GraphQL API |
+| **Workable** | Job scraping | Widget API |
+| **Personio** | Job scraping | HTML + JSON extraction |
+| **Screenloop** | Job scraping | HTML scraping |
+| **DuckDuckGo** | Company research fallback | HTML scraping |
+
+### LLM Fallback Strategy
+
+```
+Primary Provider (user-selected)
+    │
+    ├─ Rate limit? → Try next model within provider
+    │                  (Gemini: 3-flash → 2.5-flash → 2.5-flash-lite → 3-pro → 2.5-pro)
+    │
+    └─ All models exhausted? → Try next provider
+                                  (Gemini → Groq → SambaNova)
+```
+
+**Why this design:**
+- Free tiers have per-model limits (Gemini: 20 req/day per model, 5 models = 100 total)
+- Different providers have different rate limit windows
+- Automatic fallback means no manual intervention during batch runs
+
+### Token Optimization
+
+We considered several approaches to reduce Claude Code token usage:
+
+1. **Prompts in files** (implemented): All LLM prompts stored in `prompts/*.md`, loaded at runtime
+2. **Templates over generation**: LaTeX structure comes from master template, LLM only modifies content
+3. **Structured extraction**: Job scraping uses APIs when available (cheaper than LLM parsing HTML)
+4. **Context7 MCP** (configured): Provides up-to-date documentation to avoid outdated API calls
+
+**Pipeline vs Claude Code split:**
+- Repetitive tasks (resume tailoring, ATS checks) → Gemini/Groq (free)
+- System development → Claude Code (when modifying the codebase)
+
+### MCP Integration
+
+`.mcp.json` configures Model Context Protocol servers:
+
+```json
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    }
+  }
+}
+```
+
+**Context7** provides real-time documentation for APIs (Google Gemini, Notion, etc.) to avoid errors from outdated SDK usage.
+
+---
+
 ## Changelog
 
 ### Feb 2026
