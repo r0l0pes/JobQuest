@@ -230,12 +230,25 @@ def step_apply_ats_edits(
         console.print(Panel(Markdown(md), title="ATS Report", border_style="blue"))
 
     # Decide whether to auto-apply
+    # Check if running interactively (has TTY) or from UI subprocess
+    import sys
+    is_interactive = sys.stdin.isatty()
+
     if pct >= 80:
         console.print(
             f"  [green]Score {pct}% >= 80% — auto-applying {len(edits)} edits.[/green]"
         )
         apply = True
+    elif not is_interactive:
+        # Running from UI - can't ask for input, auto-apply with warning
+        console.print(f"  [yellow]Score {pct}% < 80% — auto-applying {len(edits)} edits (non-interactive mode).[/yellow]")
+        for i, edit in enumerate(edits[:3], 1):
+            console.print(f"  Edit {i}: [{edit.get('type', '?')}] {edit.get('keyword', '?')}")
+        if len(edits) > 3:
+            console.print(f"  ... and {len(edits) - 3} more edits")
+        apply = True
     else:
+        # Interactive terminal - ask user
         console.print(f"  [yellow]Score {pct}% < 80% — review needed.[/yellow]\n")
         for i, edit in enumerate(edits, 1):
             console.print(
@@ -245,7 +258,6 @@ def step_apply_ats_edits(
             console.print(f"    Before: {edit.get('current_text', '')[:80]}")
             console.print(f"    After:  {edit.get('suggested_text', '')[:80]}")
             console.print(f"    Why:    {edit.get('rationale', '')}\n")
-
         apply = Confirm.ask("  Apply all suggested edits?", default=True)
 
     if not apply:

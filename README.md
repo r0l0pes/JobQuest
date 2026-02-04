@@ -77,6 +77,7 @@ pip install -r requirements.txt
 GEMINI_API_KEY=...
 GROQ_API_KEY=...        # optional, enables fallback
 SAMBANOVA_API_KEY=...   # optional, enables fallback
+FIRECRAWL_API_KEY=...   # optional, better JS page scraping
 NOTION_TOKEN=...
 # ... (see .env.example for full list)
 
@@ -155,6 +156,7 @@ JobQuest/
 | **Personio** | Job scraping | HTML + JSON extraction |
 | **Screenloop** | Job scraping | HTML scraping |
 | **DuckDuckGo** | Company research fallback | HTML scraping |
+| **Firecrawl** | Enhanced web scraping (JS, anti-bot) | REST API |
 
 ### LLM Fallback Strategy
 
@@ -172,6 +174,22 @@ Primary Provider (user-selected)
 - Free tiers have per-model limits (Gemini: 20 req/day per model, 5 models = 100 total)
 - Different providers have different rate limit windows
 - Automatic fallback means no manual intervention during batch runs
+
+### Web Scraping Strategy
+
+```
+Job URL
+    │
+    ├─ Known ATS? → Use API (Greenhouse, Lever, Ashby, Workable)
+    │
+    └─ Unknown? → HTML scraping
+                     │
+                     └─ Incomplete? → Firecrawl (if configured)
+                                          │
+                                          └─ Still incomplete? → Playwright
+```
+
+**Why Firecrawl?** Modern job boards use heavy JavaScript, anti-bot measures, and dynamic content loading. Firecrawl handles these better than raw HTML scraping and is faster than spinning up Playwright.
 
 ### Token Optimization
 
@@ -217,6 +235,8 @@ We considered several approaches to reduce Claude Code token usage:
 - "Never say no" rule for Q&A
 - Fixed LaTeX `\begin{document}` generation
 - Removed form filler (manual submission preferred)
+- Firecrawl integration for enhanced JS page scraping
+- Non-interactive mode for ATS review (auto-apply edits when running from UI)
 
 ### Jan 2026
 - Initial pipeline implementation

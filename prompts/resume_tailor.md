@@ -39,7 +39,7 @@ The tailored resume must:
 - **Change verified metrics or achievements** — numbers are sacred
 - **Inflate scope** — "coordinated" is NOT "led"; "managed roadmap" is NOT "managed team"
 - **Keyword-stuff** — unnatural repetition triggers ATS penalties
-- **Use markdown formatting** — NO `**bold**` or `*italics*`; use ONLY LaTeX commands (`\textbf{}`, `\textit{}`)
+- **Use markdown formatting** — ABSOLUTELY NO `**bold**`, `*italics*`, or `__underline__`. Use ONLY LaTeX: `\textbf{}` for bold, `\textit{}` for italics. Markdown will break PDF compilation.
 - **Change the document structure** — sections must remain in the same order
 - **Use Jinja2 variables or placeholders** — write complete content directly
 
@@ -97,6 +97,16 @@ Use this exact document structure (copy from master resume):
 ```
 
 **Section order:** Summary → Technical Proficiency → Experience → Certifications → Languages → Education
+
+**Technical Proficiency format — MUST be bullet list, NOT paragraph:**
+```latex
+\section*{Technical Proficiency}
+\begin{itemize}[leftmargin=*, label=$\bullet$, itemsep=3pt, parsep=0pt]
+\item \textbf{Category Name:} Skill 1, Skill 2, Skill 3
+\item \textbf{Another Category:} Skill A, Skill B, Skill C
+\end{itemize}
+```
+⚠️ CRITICAL: Each category MUST be a separate `\item` with `\textbf{Category:}` prefix. NEVER write this section as a paragraph.
 
 **Experience entry format:**
 ```latex
@@ -212,4 +222,6 @@ The file must:
 - End with `\end{document}`
 - Be immediately compilable by pdflatex without errors
 - Follow the exact template structure from the master resume
-- Contain no markdown formatting (no `**` or `*`)
+- Contain NO markdown formatting (no `**`, `*`, `__` — these break LaTeX)
+- Technical Proficiency MUST be `\begin{itemize}...\end{itemize}` with `\item \textbf{Category:}` format
+- Use `\textbf{}` for bold, never `**`

@@ -1,16 +1,20 @@
 """Job posting scraper and company research module.
 
 Supports structured APIs for Greenhouse, Lever, Ashby, and Workable.
-Falls back to generic HTML scraping, then Playwright for JS-heavy pages.
+Falls back to generic HTML scraping, Firecrawl, then Playwright for JS-heavy pages.
 Company research via Google (primary) with DuckDuckGo fallback.
 """
 
+import os
 import re
 import json
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from rich.console import Console
+
+# Firecrawl API for enhanced web scraping (handles anti-bot, JS rendering)
+FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "")
 
 
 # ─── ATS URL Patterns ────────────────────────────────────────────
@@ -408,6 +412,53 @@ def _scrape_generic(url: str) -> dict:
     return _extract_from_html(resp.text, url)
 
 
+def _scrape_with_firecrawl(url: str) -> dict:
+    """Scrape using Firecrawl API - handles JS, anti-bot, and complex pages."""
+    if not FIRECRAWL_API_KEY:
+        raise ValueError("FIRECRAWL_API_KEY not set")
+
+    try:
+        from firecrawl import FirecrawlApp
+    except ImportError:
+        raise ImportError("firecrawl-py not installed")
+
+    app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
+    result = app.scrape_url(url, params={
+        "formats": ["markdown", "html"],
+        "waitFor": 3000,  # Wait for JS to render
+    })
+
+    # Extract from markdown (cleaner) or fall back to HTML
+    markdown = result.get("markdown", "")
+    html = result.get("html", "")
+    metadata = result.get("metadata", {})
+
+    title = metadata.get("title", "")
+    description = markdown if markdown else ""
+
+    # If markdown is empty, try HTML
+    if not description and html:
+        soup = BeautifulSoup(html, "html.parser")
+        for tag in soup(["script", "style", "nav", "footer", "header"]):
+            tag.decompose()
+        description = soup.get_text(separator="\n", strip=True)
+
+    # Extract company from og:site_name or URL
+    company = metadata.get("ogSiteName", "")
+    if not company:
+        parsed = urlparse(url)
+        company = parsed.hostname.split(".")[0].title() if parsed.hostname else ""
+
+    return {
+        "title": title,
+        "company": company,
+        "description": description,
+        "url": url,
+        "source": "firecrawl",
+        "questions": [],
+    }
+
+
 def _scrape_with_playwright(url: str) -> dict:
     """Fallback: full browser render for JS-heavy pages."""
     from playwright.sync_api import sync_playwright
@@ -650,14 +701,26 @@ def scrape_job_posting(
         result = _scrape_with_playwright(url)
 
     # If content is too short or missing title/company, JS probably didn't render
-    needs_playwright = (
+    needs_enhanced = (
         len(result.get("description", "")) < 200
         or not result.get("title")
         or not result.get("company")
     )
 
-    if needs_playwright:
-        log("  [yellow]Incomplete data — retrying with Playwright...[/yellow]")
+    if needs_enhanced:
+        # Try Firecrawl first (better anti-bot, JS handling)
+        if FIRECRAWL_API_KEY:
+            log("  [yellow]Incomplete data — trying Firecrawl...[/yellow]")
+            try:
+                fc_result = _scrape_with_firecrawl(url)
+                if fc_result.get("description") and len(fc_result.get("description", "")) > len(result.get("description", "")):
+                    result = fc_result
+                    return result
+            except Exception as e:
+                log(f"  [dim]Firecrawl failed: {e}[/dim]")
+
+        # Fall back to Playwright
+        log("  [yellow]Retrying with Playwright...[/yellow]")
         try:
             pw_result = _scrape_with_playwright(url)
             # Merge: prefer Playwright results but keep any good data from HTML
@@ -726,7 +789,25 @@ def research_company(
 
 
 def _fetch_company_page(url: str) -> str:
-    """Fetch and extract key info from company website."""
+    """Fetch and extract key info from company website.
+    Uses Firecrawl if available for better JS handling.
+    """
+    # Try Firecrawl first for better results
+    if FIRECRAWL_API_KEY:
+        try:
+            from firecrawl import FirecrawlApp
+            app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
+            result = app.scrape_url(url, params={
+                "formats": ["markdown"],
+                "waitFor": 2000,
+            })
+            markdown = result.get("markdown", "")
+            if markdown and len(markdown) > 100:
+                # Truncate to reasonable size for company research
+                return markdown[:3000]
+        except Exception:
+            pass  # Fall through to regular fetch
+
     resp = requests.get(url, headers=_HEADERS, timeout=15)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")

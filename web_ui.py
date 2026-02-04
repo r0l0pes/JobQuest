@@ -61,7 +61,6 @@ def get_stats_display():
         p_stats = stats["providers"].get(provider, {"calls": 0, "apps": 0})
         calls = p_stats.get("calls", 0)
         apps = p_stats.get("apps", 0)
-        remaining = max(0, info["calls"] - calls)
         pct = (calls / info["calls"]) * 100
 
         status = "🟢" if pct < 80 else "🟡" if pct < 100 else "🔴"
@@ -79,13 +78,10 @@ def get_recent_outputs():
     if not dirs:
         return "No outputs yet."
 
-    lines = []
-    for d in dirs:
-        pdf = list(d.glob("*.pdf"))
-        status = "✅" if pdf else "⏳"
-        lines.append(f"{status} {d.name}")
+    complete = sum(1 for d in dirs if list(d.glob("*.pdf")))
+    pending = len(dirs) - complete
 
-    return " | ".join(lines)
+    return f"Recent: {complete} complete, {pending} pending"
 
 
 def run_application(job_url, company_url, questions, provider):
@@ -106,7 +102,7 @@ def run_application(job_url, company_url, questions, provider):
 
     full_env = os.environ.copy()
     full_env["LLM_PROVIDER"] = provider
-    full_env["PYTHONUNBUFFERED"] = "1"  # Ensure real-time output
+    full_env["PYTHONUNBUFFERED"] = "1"
 
     yield f"🚀 Starting with {provider}...\n\n"
 
@@ -115,7 +111,7 @@ def run_application(job_url, company_url, questions, provider):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        bufsize=1,  # Line buffering
+        bufsize=1,
         cwd=str(PROJECT_ROOT),
         env=full_env,
     )
@@ -133,7 +129,6 @@ def run_application(job_url, company_url, questions, provider):
 
     process.wait()
 
-    # Update stats
     stats = load_stats()
     if provider not in stats["providers"]:
         stats["providers"][provider] = {"calls": 0, "apps": 0}
@@ -183,7 +178,7 @@ def create_app_form(slot_num):
             value="gemini",
             label="Provider",
         )
-        submit_btn = gr.Button(f"🚀 Run #{slot_num}", variant="primary")
+        submit_btn = gr.Button(f"Run #{slot_num}", variant="primary")
         output = gr.Textbox(
             label="Output",
             lines=15,
@@ -197,19 +192,16 @@ def create_app_form(slot_num):
 def create_ui():
     """Create the Gradio interface with 3 parallel forms."""
     with gr.Blocks(title="JobQuest") as app:
-        gr.Markdown("# 🎯 JobQuest — Parallel Applications")
+        gr.Markdown("# JobQuest")
 
-        # Stats bar
         with gr.Row():
             stats_display = gr.Markdown(get_stats_display())
-            refresh_btn = gr.Button("🔄", size="sm", scale=0)
+            refresh_btn = gr.Button("Refresh", size="sm", scale=0)
 
-        # Recent outputs
         recent_display = gr.Markdown(get_recent_outputs())
 
         gr.Markdown("---")
 
-        # 3 parallel application forms
         with gr.Row():
             with gr.Column():
                 gr.Markdown("### Application 1")
@@ -223,7 +215,6 @@ def create_ui():
                 gr.Markdown("### Application 3")
                 j3, c3, q3, p3, b3, o3 = create_app_form(3)
 
-        # Event handlers - each form runs independently (concurrency_limit=None means no limit)
         b1.click(fn=run_application, inputs=[j1, c1, q1, p1], outputs=o1, concurrency_limit=None)
         b2.click(fn=run_application, inputs=[j2, c2, q2, p2], outputs=o2, concurrency_limit=None)
         b3.click(fn=run_application, inputs=[j3, c3, q3, p3], outputs=o3, concurrency_limit=None)
@@ -238,7 +229,6 @@ def create_ui():
 
 if __name__ == "__main__":
     app = create_ui()
-    # Enable queue with no concurrency limit (allows parallel execution)
     app.queue(default_concurrency_limit=None)
     app.launch(
         server_name="127.0.0.1",
