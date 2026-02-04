@@ -2,7 +2,7 @@
 
 Automated job application pipeline. Paste a URL, get a tailored PDF resume + ATS report + application answers + Notion tracking.
 
-<img width="1554" height="1037" alt="Screenshot 2026-02-04 at 19 00 16" src="https://github.com/user-attachments/assets/1c432fc7-1c37-4756-94cd-836c4d7acf69" />
+<img width="1566" height="1035" alt="Screenshot 2026-02-04 at 19 19 39" src="https://github.com/user-attachments/assets/43b96708-5ea7-4425-9de0-62ea30fb4894" />
 
 ## Quick Launch
 
